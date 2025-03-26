@@ -167,7 +167,7 @@ const Login = () => {
                 className="absolute right-5 text-sm text-indigo-300 focus:outline-none"
                 aria-label="Toggle password visibility"
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? <img src={assets.eye_close} className="w-4 h-4" alt="eye-open" /> : <img src={assets.eye_open} className="w-4 h-4" alt="eye-open"/>}
               </button>
             </div>
             {state === "Sign Up" && password && (
@@ -184,6 +184,11 @@ const Login = () => {
                     }}
                   />
                 </div>
+                {(pwdScore === 0 || pwdScore === 1) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Your password is too weak. Please choose a stronger password.
+                  </p>
+                )}
               </div>
             )}
           </div>

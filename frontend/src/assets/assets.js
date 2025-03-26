@@ -6,8 +6,13 @@ import person_icon from './person_icon.svg'
 import hand_wave from './hand_wave.png'
 import header_img from './header_img.png'
 import left_arrow from './left-arrow.svg'
+import eye_open from './eye-open.svg'
+import eye_close from './eye-close.svg'
+
 
 export const assets = {
+    eye_open,
+    eye_close,
     left_arrow,
     arrow_icon,
     lock_icon,

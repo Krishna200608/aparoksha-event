@@ -238,7 +238,7 @@ const ResetPassword = () => {
                 className="absolute right-5 text-sm text-indigo-300 focus:outline-none"
                 aria-label="Toggle password visibility"
               >
-                {showNewPassword ? "Hide" : "Show"}
+               {showNewPassword ? <img src={assets.eye_close} className="w-4 h-4" alt="eye-open" /> : <img src={assets.eye_open} className="w-4 h-4" alt="eye-open"/>}
               </button>
             </div>
             {newPassword && (
@@ -255,6 +255,11 @@ const ResetPassword = () => {
                     }}
                   />
                 </div>
+                {(newPasswordScore === 0 || newPasswordScore === 1) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Your password is too weak. Please choose a stronger password.
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -1,4 +1,4 @@
-# 🎉 Aparoksha Event Management System 🚀
+# 🎉 Aparoksha Event Management 🚀
 
 Welcome to the Aparoksha Event Management System—a 🎯 platform designed for the premier 🏆 technical event of IIITA. This project consists of a ⚛️ React frontend and a 🖥️ Node.js/Express backend.
 

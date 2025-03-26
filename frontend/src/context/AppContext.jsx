@@ -1,17 +1,19 @@
 import axios from "axios";
 import { createContext, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export const AppContext = createContext();
 
 export const AppContextProvider = (props) => {
-
+    
     axios.defaults.withCredentials = true;
 
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
     const [isLoggedin, setIsLoggedin] = useState(false);
     const [userData, setUserData] = useState(false);
+    const navigate = useNavigate();
 
     const getAuthState = async () => {
         try {
@@ -49,7 +51,7 @@ export const AppContextProvider = (props) => {
         backendUrl,
         isLoggedin, setIsLoggedin,
         userData, setUserData,
-        getUserData
+        getUserData, navigate
     }
 
     return (

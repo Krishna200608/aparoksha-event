@@ -15,6 +15,7 @@ const ResetPassword = () => {
   const [email, setEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newPasswordScore, setNewPasswordScore] = useState(0); // State for password strength score
+  const [showNewPassword, setShowNewPassword] = useState(false); // State to toggle new password visibility
   const [isEmailSent, setIsEmailSent] = useState("");
   const [otp, setOtp] = useState("");
   const [isOtpSubmitted, setIsOtpSubmitted] = useState(false);
@@ -148,11 +149,12 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from blue-200 to-purple-400">
+    <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400">
       <img
         onClick={() => navigate("/")}
         src={assets.logo}
-        className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
+        className="absolute left-5 sm:left-20 top-5 w-28 sm:w-20 cursor-pointer"
+        alt="logo"
       />
 
       {/* Enter the email id */}
@@ -163,6 +165,7 @@ const ResetPassword = () => {
               onClick={() => navigate("/login")}
               src={assets.left_arrow}
               className="h-6 w-6 cursor-pointer rounded-full bg-white"
+              alt="back arrow"
             />
             <h1 className="text-white text-2xl font-semibold text-center mb-4">Reset password</h1>
           </div>
@@ -218,16 +221,25 @@ const ResetPassword = () => {
           <p className="text-center mb-6 text-indigo-300">Enter the new password below</p>
 
           <div className="mb-4 flex flex-col gap-2">
-            <div className="flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
+            <div className="relative flex items-center gap-3 w-full px-5 py-2.5 rounded-full bg-[#333A5C]">
               <img src={assets.lock_icon} className="w-3 h-3" alt="lock icon" />
               <input
-                type="password"
+                type={showNewPassword ? "text" : "password"}
                 placeholder="Password"
-                className="bg-transparent outline-none text-white"
+                className="bg-transparent outline-none w-full text-white"
                 onChange={handleNewPasswordChange}
                 value={newPassword}
                 required
               />
+              {/* Toggle button for password visibility */}
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-5 text-sm text-indigo-300 focus:outline-none"
+                aria-label="Toggle password visibility"
+              >
+                {showNewPassword ? "Hide" : "Show"}
+              </button>
             </div>
             {newPassword && (
               <div className="px-5">
@@ -256,4 +268,3 @@ const ResetPassword = () => {
 };
 
 export default ResetPassword;
-

@@ -14,13 +14,13 @@ const Login = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [pwdScore, setPwdScore] = useState(0);  // New state to hold password strength score
+  const [pwdScore, setPwdScore] = useState(0);  // State to hold password strength score
+  const [showPassword, setShowPassword] = useState(false);  // State to control password visibility
 
   // Update password and compute strength
   const handlePasswordChange = (e) => {
     const pwd = e.target.value;
     setPassword(pwd);
-    // Evaluate the password using zxcvbn
     const evaluation = zxcvbn(pwd);
     setPwdScore(evaluation.score);
   };
@@ -43,7 +43,7 @@ const Login = () => {
     }
   };
 
-  // Optionally, set a color based on password strength
+  // Return a color based on password strength score
   const getStrengthColor = () => {
     switch (pwdScore) {
       case 0:
@@ -104,11 +104,12 @@ const Login = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from blue-200 to-purple-400">
+    <div className="flex items-center justify-center min-h-screen px-6 sm:px-0 bg-gradient-to-br from-blue-200 to-purple-400">
       <img
         onClick={() => navigate("/")}
         src={assets.logo}
-        className="absolute left-5 sm:left-20 top-5 w-28 sm:w-32 cursor-pointer"
+        className="absolute left-5 sm:left-20 top-5 w-28 sm:w-20 cursor-pointer"
+        alt="logo"
       />
       <div className="bg-slate-900 p-10 rounded-lg shadow-lg w-full sm:w-96 text-indigo-300">
         <h2 className="text-3xl font-semibold text-white text-center mb-3">
@@ -149,23 +150,31 @@ const Login = () => {
           </div>
 
           <div className="mb-4 flex flex-col gap-2">
-            <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5C]">
+            <div className="relative flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5C]">
               <img src={assets.lock_icon} alt="lock icon" />
               <input
                 onChange={handlePasswordChange}
                 value={password}
-                className="bg-transparent outline-none"
-                type="password"
+                className="bg-transparent outline-none w-full"
+                type={showPassword ? "text" : "password"}  // Toggle between text and password
                 placeholder="Password"
                 required
               />
+              {/* Toggle button for password visibility */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-5 text-sm text-indigo-300 focus:outline-none"
+                aria-label="Toggle password visibility"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
             </div>
             {state === "Sign Up" && password && (
               <div className="px-5">
                 <p className="text-sm">
                   Password Strength: <strong>{getPasswordStrength()}</strong>
                 </p>
-                {/* Simple progress bar for visual feedback */}
                 <div className="w-full h-2 bg-gray-700 rounded">
                   <div
                     className="h-2 rounded"

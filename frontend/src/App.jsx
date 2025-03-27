@@ -5,6 +5,8 @@ import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import EmailVerify from './pages/EmailVerify'
 import {ToastContainer} from 'react-toastify'
+import CreateEventForm from './pages/CreateEventForm'
+import RegisterEventForm from './pages/RegisterEventForm'
 
 const App = () => {
   return (
@@ -15,6 +17,8 @@ const App = () => {
         <Route path='/login' element={<Login/>}/>
         <Route path='/email-verify' element={<EmailVerify/>}/>
         <Route path='/reset-password' element={<ResetPassword/>}/>
+        <Route path='/create-event' element={<CreateEventForm/>}/>
+        <Route path='/register-event' element={<RegisterEventForm/>}/>
       </Routes>
     </div>
   )

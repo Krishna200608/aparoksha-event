@@ -11,7 +11,7 @@ const userAuth = async (req, res, next) => {
         const decoded_token = jwt.verify(token, process.env.JWT_SECRET);
 
         if(decoded_token.id){
-            req.body.userId = decoded_token.id;
+            req.body.user_id = decoded_token.id;
         }
         else {
             return res.json({success: false, message: "Not Authorised Login Again"});

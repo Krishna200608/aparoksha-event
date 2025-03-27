@@ -13,8 +13,22 @@ export const register = async (req, res) => {
     }
 
     try {
+        // Check if the email is valid
         if (!validator.isEmail(email)) {
             return res.json({ success: false, message: "Enter a valid email address" });
+        }
+
+        // Define a whitelist of allowed domains
+        const allowedDomains = ["iiita.ac.in", "gmail.com"];
+        const emailParts = email.split("@");
+        if (emailParts.length !== 2) {
+            return res.json({ success: false, message: "Invalid email format" });
+        }
+        const emailDomain = emailParts[1].toLowerCase();
+
+        // Verify that the email's domain is in the allowed domains list
+        if (!allowedDomains.includes(emailDomain)) {
+            return res.json({ success: false, message: "Please use a valid institute email address" });
         }
 
         const db = await connectToDatabase();
@@ -36,7 +50,7 @@ export const register = async (req, res) => {
         );
 
         // Get the inserted user ID
-        const userId = result.insertId;
+        const userId = result.user_id;
         
         // Generate JWT token
         const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
@@ -89,7 +103,7 @@ export const login = async (req, res) => {
         }
 
         // Generate a JWT token using the user id from the MySQL record
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ id: user.user_id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -98,7 +112,7 @@ export const login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
-        return res.json({ success: true, message: "User Logged In" });
+        return res.json({ success: true, message: "User Logged In" , token});
     } catch (error) {
         console.error(error);
         return res.json({ success: false, message: error.message });

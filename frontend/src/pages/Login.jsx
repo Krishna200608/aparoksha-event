@@ -8,7 +8,7 @@ import zxcvbn from "zxcvbn";  // Importing zxcvbn for password strength evaluati
 
 const Login = () => {
   const navigate = useNavigate();
-  const { backendUrl, setIsLoggedin, getUserData } = useContext(AppContext);
+  const { backendUrl, setIsLoggedin, getUserData, } = useContext(AppContext);
 
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
@@ -16,6 +16,9 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [pwdScore, setPwdScore] = useState(0);  // State to hold password strength score
   const [showPassword, setShowPassword] = useState(false);  // State to control password visibility
+
+  // List of allowed domains for sign up
+  const allowedDomains = ["iiita.ac.in", "gmail.com"];
 
   // Update password and compute strength
   const handlePasswordChange = (e) => {
@@ -63,6 +66,16 @@ const Login = () => {
 
   const onSubmitHandler = async (event) => {
     event.preventDefault();
+
+    // Check allowed domain only for Sign Up
+    if (state === "Sign Up") {
+      const emailParts = email.split("@");
+      if (emailParts.length !== 2 || !allowedDomains.includes(emailParts[1].toLowerCase())) {
+        toast.error("Please use a valid institute email");
+        return;
+      }
+    }
+
     try {
       // To also send the cookies with the post request
       axios.defaults.withCredentials = true;
@@ -94,6 +107,7 @@ const Login = () => {
           getUserData();
           navigate("/");
         } else {
+          console.log(data.message);
           toast.error(data.message);
         }
       }
@@ -156,18 +170,21 @@ const Login = () => {
                 onChange={handlePasswordChange}
                 value={password}
                 className="bg-transparent outline-none w-full"
-                type={showPassword ? "text" : "password"}  // Toggle between text and password
+                type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 required
               />
-              {/* Toggle button for password visibility */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-5 text-sm text-indigo-300 focus:outline-none"
                 aria-label="Toggle password visibility"
               >
-                {showPassword ? <img src={assets.eye_close} className="w-4 h-4" alt="eye-open" /> : <img src={assets.eye_open} className="w-4 h-4" alt="eye-open"/>}
+                {showPassword ? (
+                  <img src={assets.eye_close} className="w-4 h-4" alt="eye closed" />
+                ) : (
+                  <img src={assets.eye_open} className="w-4 h-4" alt="eye open" />
+                )}
               </button>
             </div>
             {state === "Sign Up" && password && (

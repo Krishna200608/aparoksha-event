@@ -4,6 +4,7 @@ import 'dotenv/config'
 import cookieParser from 'cookie-parser';
 import authRouter from './routes/authRoutes.js';
 import userRouter from './routes/userRoutes.js';
+import eventRouter from './routes/eventRoutes.js';
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRouter)
 app.use('/api/user', userRouter);
+app.use('/api/events',eventRouter);
 
 app.listen(port, ()=> console.log("Server started on PORT: "+ port));
 

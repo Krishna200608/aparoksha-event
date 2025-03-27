@@ -2,14 +2,14 @@ import { connectToDatabase } from '../lib/db.js';
 
 export const getUserData = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { user_id } = req.body;
         
-        if (!userId) {
+        if (!user_id) {
             return res.status(400).json({ success: false, message: "User ID is required" });
         }
         
         const db = await connectToDatabase();       
-        const [rows] = await db.query('SELECT * FROM users WHERE id = ?', [userId]);
+        const [rows] = await db.query('SELECT * FROM users WHERE user_id = ?', [user_id]);
         
         if (rows.length === 0) {
             return res.status(404).json({ success: false, message: "User not found" });

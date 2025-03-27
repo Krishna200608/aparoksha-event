@@ -21,9 +21,20 @@ const Header = () => {
         and connect.
       </p>
 
-      <button onClick={()=>navigate('/login')} className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all">
-        Get Started
-      </button>
+      <div className="flex justify-between gap-5">
+        <button onClick={()=>navigate('/login')} className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all">
+          Get Started
+        </button>
+
+        <button onClick={()=>navigate('/create-event')} className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all">
+        Create Event
+        </button>
+        <button onClick={()=>navigate('/register-event')} className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all">
+        Register Event
+        </button>
+      </div>
+
+     
     </div>
   );
 };

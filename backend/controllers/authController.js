@@ -50,10 +50,10 @@ export const register = async (req, res) => {
         );
 
         // Get the inserted user ID
-        const userId = result.user_id;
+        const user_id = result.insertId;
         
         // Generate JWT token
-        const token = jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ id: user_id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
         res.cookie('token', token, {
             httpOnly: true,
@@ -147,15 +147,15 @@ const generateOtp = () => {
 // Send Verification Otp to the User's Email
 export const sendVerifyOtp = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { user_id } = req.body;
         
-        if (!userId) {
+        if (!user_id) {
             return res.json({ success: false, message: "User ID is required" });
         }
         
         const db = await connectToDatabase();
-        // Retrieve the user using the userId (primary key "id")
-        const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+        // Retrieve the user using the user_id (primary key "id")
+        const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [user_id]);
         if (rows.length === 0) {
             return res.json({ success: false, message: "User not found" });
         }
@@ -172,8 +172,8 @@ export const sendVerifyOtp = async (req, res) => {
         
         // Update the user's OTP and expiry time in the database
         await db.query(
-            "UPDATE users SET verifyOtp = ?, verifyOtpExpireAt = ? WHERE id = ?",
-            [otp, verifyOtpExpireAt, userId]
+            "UPDATE users SET verifyOtp = ?, verifyOtpExpireAt = ? WHERE user_id = ?",
+            [otp, verifyOtpExpireAt, user_id]
         );
         
         // Sending verification email
@@ -194,16 +194,16 @@ export const sendVerifyOtp = async (req, res) => {
 };
 
 export const verifyEmail = async (req, res) => {
-    const { userId, otp } = req.body;
+    const { user_id, otp } = req.body;
 
-    if (!userId || !otp) {
+    if (!user_id || !otp) {
         return res.json({ success: false, message: 'Missing Details' });
     }
 
     try {
         const db = await connectToDatabase();
         // Retrieve the user using the primary key "id"
-        const [rows] = await db.query("SELECT * FROM users WHERE id = ?", [userId]);
+        const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [user_id]);
         if (rows.length === 0) {
             return res.json({ success: false, message: "User Not found" });
         }
@@ -222,8 +222,8 @@ export const verifyEmail = async (req, res) => {
 
         // OTP is valid, update the user's verification status and clear OTP fields
         await db.query(
-            "UPDATE users SET isAccountVerified = ?, verifyOtp = ?, verifyOtpExpireAt = ? WHERE id = ?",
-            [1, '', 0, userId]
+            "UPDATE users SET isAccountVerified = ?, verifyOtp = ?, verifyOtpExpireAt = ? WHERE user_id = ?",
+            [1, '', 0, user_id]
         );
 
         return res.json({ success: true, message: "Email verified successfully" });
@@ -262,12 +262,13 @@ export const sendResetOtp = async (req, res) => {
         const user = rows[0];
         // Generate OTP and set expiry time (15 minutes from now)
         const otp = generateOtp();
+        console.log(otp);
         const resetOtpExpireAt = Date.now() + 15 * 60 * 1000;
 
         // Update the user's resetOtp and resetOtpExpireAt fields in the database
         await db.query(
-            "UPDATE users SET resetOtp = ?, resetOtpExpireAt = ? WHERE id = ?",
-            [otp, resetOtpExpireAt, user.id]
+            "UPDATE users SET resetOtp = ?, resetOtpExpireAt = ? WHERE user_id = ?",
+            [otp, resetOtpExpireAt, user.user_id]
         );
 
         // Sending password reset email
@@ -358,8 +359,8 @@ export const resetPassword = async (req, res) => {
 
         // Update the user's password and clear reset OTP fields in the database
         await db.query(
-            "UPDATE users SET password = ?, resetOtp = ?, resetOtpExpireAt = ? WHERE id = ?",
-            [hashedPassword, '', 0, user.id]
+            "UPDATE users SET password = ?, resetOtp = ?, resetOtpExpireAt = ? WHERE user_id = ?",
+            [hashedPassword, '', 0, user.user_id]
         );
 
         return res.json({ success: true, message: "Password has been reset successfully" });

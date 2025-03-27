@@ -20,7 +20,7 @@ export const getUserData = async (req, res) => {
             success: true,
             userData: {
                 name: user.name,
-                isAccountVerified: !!user.isAccountVerified, // Convert TINYINT to Boolean
+                isAccountVerified: !!user.isAccountVerified,
             }
         });
     } catch (error) {

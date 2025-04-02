@@ -2,14 +2,21 @@ import { connectToDatabase } from '../lib/db.js';
 
 export const getUserData = async (req, res) => {
     try {
-        const { user_id } = req.body;
+        const { userID } = req.body;
         
-        if (!user_id) {
+        if (!userID) {
             return res.status(400).json({ success: false, message: "User ID is required" });
         }
         
-        const db = await connectToDatabase();       
-        const [rows] = await db.query('SELECT * FROM users WHERE user_id = ?', [user_id]);
+        const db = await connectToDatabase();
+        // Join User and Authentication tables to get the user name and verification status
+        const [rows] = await db.query(
+            `SELECT U.name, A.isAccountVerified
+             FROM User U
+             JOIN Authentication A ON U.userID = A.userID
+             WHERE U.userID = ?`, 
+            [userID]
+        );
         
         if (rows.length === 0) {
             return res.status(404).json({ success: false, message: "User not found" });

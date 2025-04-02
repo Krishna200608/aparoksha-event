@@ -1,10 +1,15 @@
-import bcrypt, { genSalt } from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import bcrypt, { genSalt } from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import validator from 'validator';
 import transporter from '../config/nodemailer.js';
 import { connectToDatabase } from '../lib/db.js';
 import { EMAIL_VERIFY_TEMPLATE, PASSWORD_RESET_TEMPLATE } from '../config/emailTemplates.js';
 
+const generateOtp = () => {
+   return String(Math.floor(100000 + Math.random() * 900000));
+};
+
+// Register a new user
 export const register = async (req, res) => {
     const { name, email, password } = req.body;
 
@@ -13,48 +18,46 @@ export const register = async (req, res) => {
     }
 
     try {
-        // Check if the email is valid
+        // Validate email format and allowed domains
         if (!validator.isEmail(email)) {
             return res.json({ success: false, message: "Enter a valid email address" });
         }
-
-        // Define a whitelist of allowed domains
         const allowedDomains = ["iiita.ac.in", "gmail.com"];
         const emailParts = email.split("@");
         if (emailParts.length !== 2) {
             return res.json({ success: false, message: "Invalid email format" });
         }
         const emailDomain = emailParts[1].toLowerCase();
-
-        // Verify that the email's domain is in the allowed domains list
         if (!allowedDomains.includes(emailDomain)) {
             return res.json({ success: false, message: "Please use a valid institute email address" });
         }
 
         const db = await connectToDatabase();
 
-        // Check if user already exists
-        const [existingUser] = await db.execute("SELECT * FROM users WHERE email = ?", [email]);
+        // Check if user already exists in User table
+        const [existingUser] = await db.execute("SELECT * FROM User WHERE email = ?", [email]);
         if (existingUser.length > 0) {
             return res.json({ success: false, message: "User already exists" });
         }
 
-        // Hash password
+        // Insert new user into User table
+        const [result] = await db.execute(
+            "INSERT INTO User (name, email) VALUES (?, ?)",
+            [name, email]
+        );
+        const userID = result.insertId;
+
+        // Hash password and create entry in Authentication table
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
-        // Insert new user into the database
-        const [result] = await db.execute(
-            "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-            [name, email, hashedPassword]
+        await db.execute(
+            `INSERT INTO Authentication (username, passwordHash, userID, verifyOtp, verifyOtpExpireAt, isAccountVerified, resetOtp, resetOtpExpireAt)
+             VALUES (?, ?, ?, '', 0, 0, '', 0)`,
+            [email, hashedPassword, userID]
         );
 
-        // Get the inserted user ID
-        const user_id = result.insertId;
-        
-        // Generate JWT token
-        const token = jwt.sign({ id: user_id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
+        // Generate JWT token using new userID
+        const token = jwt.sign({ id: userID }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -62,14 +65,13 @@ export const register = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
-        // Sending welcome email
+        // Send welcome email
         const mailOptions = {
             from: process.env.SENDER_EMAIL,
             to: email,
             subject: 'Welcome to Aparoksha',
             text: `Welcome to Aparoksha. Your account has been created with email id ${email}`
         };
-
         await transporter.sendMail(mailOptions);
 
         return res.json({ success: true, message: "User registered successfully" });
@@ -79,6 +81,7 @@ export const register = async (req, res) => {
     }
 };
 
+// Login a user
 export const login = async (req, res) => {
     const { email, password } = req.body;
 
@@ -88,23 +91,25 @@ export const login = async (req, res) => {
 
     try {
         const db = await connectToDatabase();
-        // Query the user with the given email
-        const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        // Join User and Authentication tables to retrieve user details and hashed password
+        const [rows] = await db.query(
+            `SELECT u.userID, u.email, a.passwordHash 
+             FROM User u JOIN Authentication a ON u.userID = a.userID 
+             WHERE u.email = ?`, [email]
+        );
         if (rows.length === 0) {
             return res.json({ success: false, message: "Email not registered" });
         }
 
         const user = rows[0];
-
-        // Compare the provided password with the stored hashed password
-        const isMatch = await bcrypt.compare(password, user.password);
+        // Compare provided password with the stored hashed password
+        const isMatch = await bcrypt.compare(password, user.passwordHash);
         if (!isMatch) {
             return res.json({ success: false, message: "Invalid Password" });
         }
 
-        // Generate a JWT token using the user id from the MySQL record
-        const token = jwt.sign({ id: user.user_id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-
+        // Generate JWT token using userID from User table
+        const token = jwt.sign({ id: user.userID }, process.env.JWT_SECRET, { expiresIn: '7d' });
         res.cookie('token', token, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
@@ -112,78 +117,69 @@ export const login = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         });
 
-        return res.json({ success: true, message: "User Logged In" , token});
+        return res.json({ success: true, message: "User Logged In", token });
     } catch (error) {
         console.error(error);
         return res.json({ success: false, message: error.message });
     }
 };
 
-
+// Log out a user
 export const logOut = async (req, res) => {
     try {
         res.clearCookie('token', {
             httpOnly: true, 
             secure: process.env.NODE_ENV === 'production',
             sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-        })
-
-        return res.status(200).json({success: true, message: "Logged Out"});
-
+        });
+        return res.status(200).json({ success: true, message: "Logged Out" });
     } catch (error) {
         console.error(error);
-        return res.json({success: false, message: error.message});
+        return res.json({ success: false, message: error.message });
     }
-} 
+};
 
-
-const generateOtp = () => {
-
-   const otp =  String(Math.floor(100000 + Math.random() * 900000))
-
-   return otp;
-}
-
-// Send Verification Otp to the User's Email
+// Send Verification OTP to the User's Email
 export const sendVerifyOtp = async (req, res) => {
     try {
-        const { user_id } = req.body;
-        
-        if (!user_id) {
+        const { userID } = req.body;
+        if (!userID) {
             return res.json({ success: false, message: "User ID is required" });
         }
         
         const db = await connectToDatabase();
-        // Retrieve the user using the user_id (primary key "id")
-        const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [user_id]);
+        // Retrieve the user along with Authentication details using userID
+        const [rows] = await db.query(
+            `SELECT u.userID, u.email, a.verifyOtp, a.verifyOtpExpireAt, a.isAccountVerified 
+             FROM User u JOIN Authentication a ON u.userID = a.userID 
+             WHERE u.userID = ?`, [userID]
+        );
         if (rows.length === 0) {
             return res.json({ success: false, message: "User not found" });
         }
         
         const user = rows[0];
-        
         if (user.isAccountVerified) {
-            return res.json({ success: false, message: "Account Already verified" });
+            return res.json({ success: false, message: "Account already verified" });
         }
         
-        // Generate OTP and calculate expiry time (24 hours from now)
+        // Generate OTP and set expiry time (24 hours from now)
         const otp = generateOtp();
         const verifyOtpExpireAt = Date.now() + 24 * 60 * 60 * 1000;
         
-        // Update the user's OTP and expiry time in the database
+        // Update Authentication table with the OTP and its expiry
         await db.query(
-            "UPDATE users SET verifyOtp = ?, verifyOtpExpireAt = ? WHERE user_id = ?",
-            [otp, verifyOtpExpireAt, user_id]
+            "UPDATE Authentication SET verifyOtp = ?, verifyOtpExpireAt = ? WHERE userID = ?",
+            [otp, verifyOtpExpireAt, userID]
         );
         
-        // Sending verification email
+        // Send verification email
         const mailOptions = {
             from: process.env.SENDER_EMAIL,
             to: user.email,
             subject: 'Account Verification OTP',
             html: EMAIL_VERIFY_TEMPLATE.replace("{{otp}}", otp).replace("{{email}}", user.email)
         };
-        
         await transporter.sendMail(mailOptions);
         
         return res.json({ success: true, message: "Verification OTP sent on Email" });
@@ -193,39 +189,35 @@ export const sendVerifyOtp = async (req, res) => {
     }
 };
 
+// Verify Email with OTP
 export const verifyEmail = async (req, res) => {
-    const { user_id, otp } = req.body;
-
-    if (!user_id || !otp) {
+    const { userID, otp } = req.body;
+    if (!userID || !otp) {
         return res.json({ success: false, message: 'Missing Details' });
     }
 
     try {
         const db = await connectToDatabase();
-        // Retrieve the user using the primary key "id"
-        const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [user_id]);
+        // Retrieve Authentication details using userID
+        const [rows] = await db.query("SELECT * FROM Authentication WHERE userID = ?", [userID]);
         if (rows.length === 0) {
-            return res.json({ success: false, message: "User Not found" });
+            return res.json({ success: false, message: "User not found" });
         }
 
-        const user = rows[0];
-
-        // Validate OTP: it must not be empty and must match the provided otp
-        if (user.verifyOtp === '' || user.verifyOtp !== otp) {
+        const authData = rows[0];
+        if (authData.verifyOtp === '' || authData.verifyOtp !== otp) {
             return res.json({ success: false, message: "Invalid OTP" });
         } 
 
-        // Check if the OTP has expired
-        if (user.verifyOtpExpireAt < Date.now()) {
+        if (authData.verifyOtpExpireAt < Date.now()) {
             return res.json({ success: false, message: "OTP Expired" });
         }
 
-        // OTP is valid, update the user's verification status and clear OTP fields
+        // Mark account as verified and clear OTP fields
         await db.query(
-            "UPDATE users SET isAccountVerified = ?, verifyOtp = ?, verifyOtpExpireAt = ? WHERE user_id = ?",
-            [1, '', 0, user_id]
+            "UPDATE Authentication SET isAccountVerified = ?, verifyOtp = ?, verifyOtpExpireAt = ? WHERE userID = ?",
+            [1, '', 0, userID]
         );
-
         return res.json({ success: true, message: "Email verified successfully" });
     } catch (error) {
         console.error(error);
@@ -233,45 +225,46 @@ export const verifyEmail = async (req, res) => {
     }
 };
 
-
 // Check if user is authenticated
 export const isAuthenticated = async (req, res) => {
     try {
-        return res.json({success: true})
+        return res.json({ success: true });
     } catch (error) {
         console.error(error);
-        res.json({success: false, message: error.message})
+        return res.json({ success: false, message: error.message });
     }
-}
+};
 
+// Send Password Reset OTP
 export const sendResetOtp = async (req, res) => {
     const { email } = req.body;
-
     if (!email) {
         return res.json({ success: false, message: "Email is required" });
     }
 
     try {
         const db = await connectToDatabase();
-        // Retrieve the user using the provided email
-        const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        // Retrieve user and authentication details using email
+        const [rows] = await db.query(
+            `SELECT u.userID, u.email, a.resetOtp 
+             FROM User u JOIN Authentication a ON u.userID = a.userID 
+             WHERE u.email = ?`, [email]
+        );
         if (rows.length === 0) {
             return res.json({ success: false, message: "User not found" });
         }
 
         const user = rows[0];
-        // Generate OTP and set expiry time (15 minutes from now)
         const otp = generateOtp();
-        console.log(otp);
-        const resetOtpExpireAt = Date.now() + 15 * 60 * 1000;
+        const resetOtpExpireAt = Date.now() + 15 * 60 * 1000; // 15 minutes from now
 
-        // Update the user's resetOtp and resetOtpExpireAt fields in the database
+        // Update Authentication table with reset OTP and its expiry
         await db.query(
-            "UPDATE users SET resetOtp = ?, resetOtpExpireAt = ? WHERE user_id = ?",
-            [otp, resetOtpExpireAt, user.user_id]
+            "UPDATE Authentication SET resetOtp = ?, resetOtpExpireAt = ? WHERE userID = ?",
+            [otp, resetOtpExpireAt, user.userID]
         );
 
-        // Sending password reset email
+        // Send password reset email
         const mailOptions = {
             from: process.env.SENDER_EMAIL,
             to: user.email,
@@ -280,9 +273,7 @@ export const sendResetOtp = async (req, res) => {
                 .replace('{{otp}}', otp)
                 .replace('{{email}}', user.email)
         };
-
         await transporter.sendMail(mailOptions);
-
         return res.json({ success: true, message: "OTP sent to your email" });
     } catch (error) {
         console.error(error);
@@ -290,34 +281,32 @@ export const sendResetOtp = async (req, res) => {
     }
 };
 
-
+// Verify Password Reset OTP
 export const verifyResetOtp = async (req, res) => {
     const { otp, email } = req.body;
-
     if (!email || !otp) {
         return res.json({ success: false, message: "OTP is required" });
     }
 
     try {
         const db = await connectToDatabase();
-        // Retrieve the user using the provided email
-        const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        // Retrieve user and authentication details using email
+        const [rows] = await db.query(
+            `SELECT u.userID, u.email, a.resetOtp, a.resetOtpExpireAt 
+             FROM User u JOIN Authentication a ON u.userID = a.userID 
+             WHERE u.email = ?`, [email]
+        );
         if (rows.length === 0) {
             return res.json({ success: false, message: "User not found" });
         }
 
-        const user = rows[0];
-
-        // Validate OTP: it must not be empty and must match the provided otp
-        if (user.resetOtp === '' || user.resetOtp !== otp) {
+        const authData = rows[0];
+        if (authData.resetOtp === '' || authData.resetOtp !== otp) {
             return res.json({ success: false, message: "Invalid OTP" });
         }
-
-        // Check if the OTP has expired
-        if (user.resetOtpExpireAt < Date.now()) {
+        if (authData.resetOtpExpireAt < Date.now()) {
             return res.json({ success: false, message: "OTP Expired" });
         }
-
         return res.json({ success: true, message: "OTP Verified!" });
     } catch (error) {
         console.error(error);
@@ -328,24 +317,25 @@ export const verifyResetOtp = async (req, res) => {
 // Reset User Password
 export const resetPassword = async (req, res) => {
     const { email, newPassword } = req.body;
-
     if (!email || !newPassword) {
         return res.json({ success: false, message: 'New password is required' });
     }
 
     try {
         const db = await connectToDatabase();
-
-        // Retrieve the user using the provided email
-        const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [email]);
+        // Retrieve user and authentication details using email
+        const [rows] = await db.query(
+            `SELECT u.userID, u.email, a.passwordHash 
+             FROM User u JOIN Authentication a ON u.userID = a.userID 
+             WHERE u.email = ?`, [email]
+        );
         if (rows.length === 0) {
             return res.json({ success: false, message: "User not found" });
         }
-
-        const user = rows[0];
+        const authData = rows[0];
 
         // Check if the new password is the same as the current password
-        const isSamePassword = await bcrypt.compare(newPassword, user.password);
+        const isSamePassword = await bcrypt.compare(newPassword, authData.passwordHash);
         if (isSamePassword) {
             return res.json({ 
                 success: false, 
@@ -353,14 +343,12 @@ export const resetPassword = async (req, res) => {
             });
         }
 
-        // Hash the new password
+        // Hash the new password and update Authentication table; clear reset OTP fields
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Update the user's password and clear reset OTP fields in the database
         await db.query(
-            "UPDATE users SET password = ?, resetOtp = ?, resetOtpExpireAt = ? WHERE user_id = ?",
-            [hashedPassword, '', 0, user.user_id]
+            "UPDATE Authentication SET passwordHash = ?, resetOtp = ?, resetOtpExpireAt = ? WHERE userID = ?",
+            [hashedPassword, '', 0, authData.userID]
         );
 
         return res.json({ success: true, message: "Password has been reset successfully" });

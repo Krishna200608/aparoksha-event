@@ -1,7 +1,7 @@
 import { connectToDatabase } from '../lib/db.js';
 
 export const createEvent = async (req, res) => {
-    const { title, description, event_date, registration_fee, prizes } = req.body;
+    const { title, description, event_date, registration_fee, prizes, location } = req.body;
 
     // Basic validation: ensure title and event_date are provided
     if (!title || !event_date) {
@@ -9,16 +9,17 @@ export const createEvent = async (req, res) => {
     }
 
     try {
-        // Connect to the database
         const db = await connectToDatabase();
 
-        // SQL query to insert event data into the events table
+        // Insert event data into the Event table
+        // Note: 'date' column is used instead of event_date, and 'location' can be added if available.
         const [result] = await db.execute(
-            "INSERT INTO events (title, description, event_date, registration_fee, prizes) VALUES (?, ?, ?, ?, ?)",
-            [title, description, event_date, registration_fee || 0, prizes]
+            `INSERT INTO Event (title, description, date, location, registration_fee, prizes) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [title, description, event_date, location || null, registration_fee || 0, prizes]
         );
 
-        // Return success response with the inserted event's ID
+        // Return success response with the inserted event's ID (eventID)
         return res.status(201).json({
             success: true,
             message: "Event created successfully",
@@ -31,51 +32,48 @@ export const createEvent = async (req, res) => {
 };
 
 export const registerForEvent = async (req, res) => {
-  const { user_id, event_id } = req.body;
+    const { userID, eventID } = req.body;
 
- // console.log(user_id, event_id);
-
-  // Validate that both user_id and event_id are provided
-  if (!user_id || !event_id) {
-    return res.status(400).json({ success: false, message: "User ID and Event ID are required" });
-  }
-
-  try {
-    const db = await connectToDatabase();
-
-    // Check if the student is already registered for the event
-    const [existingRegistration] = await db.execute(
-      "SELECT * FROM registrations WHERE user_id = ? AND event_id = ?",
-      [user_id, event_id]
-    );
-
-    if (existingRegistration.length > 0) {
-      return res.json({ success: false, message: "User already registered for this event" });
+    // Validate that both userID and eventID are provided
+    if (!userID || !eventID) {
+        return res.status(400).json({ success: false, message: "User ID and Event ID are required" });
     }
 
-    // Insert the registration record into the database
-    await db.execute(
-      "INSERT INTO registrations (user_id, event_id) VALUES (?, ?)",
-      [user_id, event_id]
-    );
+    try {
+        const db = await connectToDatabase();
 
-    return res.status(201).json({ success: true, message: "Event registration successful" });
-  } catch (error) {
-    console.error("Error registering for event:", error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
+        // Check if the user is already registered for the event in the Registration table
+        const [existingRegistration] = await db.execute(
+            "SELECT * FROM Registration WHERE userID = ? AND eventID = ?",
+            [userID, eventID]
+        );
+
+        if (existingRegistration.length > 0) {
+            return res.json({ success: false, message: "User already registered for this event" });
+        }
+
+        // Insert the registration record into the Registration table
+        await db.execute(
+            "INSERT INTO Registration (userID, eventID) VALUES (?, ?)",
+            [userID, eventID]
+        );
+
+        return res.status(201).json({ success: true, message: "Event registration successful" });
+    } catch (error) {
+        console.error("Error registering for event:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
 
 export const getEvents = async (req, res) => {
-  try {
-    const db = await connectToDatabase();
-    // Retrieve all events, sorted by event_date ascending
-    const [events] = await db.execute("SELECT * FROM events ORDER BY event_date ASC");
+    try {
+        const db = await connectToDatabase();
+        // Retrieve all events, sorted by the new 'date' column in ascending order
+        const [events] = await db.execute("SELECT * FROM Event ORDER BY date ASC");
 
-    return res.json({ success: true, events });
-  } catch (error) {
-    console.error("Error retrieving events:", error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
+        return res.json({ success: true, events });
+    } catch (error) {
+        console.error("Error retrieving events:", error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
 };
-

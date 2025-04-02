@@ -8,7 +8,7 @@ import zxcvbn from "zxcvbn";  // Importing zxcvbn for password strength evaluati
 
 const Login = () => {
   const navigate = useNavigate();
-  const { backendUrl, setIsLoggedin, getUserData, } = useContext(AppContext);
+  const { backendUrl, setIsLoggedin, getUserData } = useContext(AppContext);
 
   const [state, setState] = useState("Sign Up");
   const [name, setName] = useState("");
@@ -16,6 +16,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [pwdScore, setPwdScore] = useState(0);  // State to hold password strength score
   const [showPassword, setShowPassword] = useState(false);  // State to control password visibility
+  const [accountType, setAccountType] = useState("Student"); // New state for account type
 
   // List of allowed domains for sign up
   const allowedDomains = ["iiita.ac.in", "gmail.com"];
@@ -76,6 +77,11 @@ const Login = () => {
       }
     }
 
+    if(pwdScore === 0 || pwdScore === 1){
+      toast.error("Your password is too weak. Please choose a stronger password");
+      return;
+    }
+
     try {
       // To also send the cookies with the post request
       axios.defaults.withCredentials = true;
@@ -85,6 +91,7 @@ const Login = () => {
           name,
           email,
           password,
+          accountType  // sending account type
         });
 
         if (data.success) {
@@ -99,6 +106,7 @@ const Login = () => {
         const { data } = await axios.post(`${backendUrl}/api/auth/login`, {
           email,
           password,
+          accountType  // sending account type
         });
 
         if (data.success) {
@@ -107,7 +115,6 @@ const Login = () => {
           getUserData();
           navigate("/");
         } else {
-          console.log(data.message);
           toast.error(data.message);
         }
       }
@@ -209,13 +216,42 @@ const Login = () => {
               </div>
             )}
           </div>
-
+          
           <p
             onClick={() => navigate("/reset-password")}
             className="mb-4 text-indigo-500 cursor-pointer hover:text-indigo-300"
           >
             Forgot password
           </p>
+
+          {/* Account type selection */}
+          <div className="mb-4">
+            {/* <label className="block text-sm font-medium mb-2">Account Type</label> */}
+            <div className="flex items-center gap-4">
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="Student"
+                  checked={accountType === "Student"}
+                  onChange={(e) => setAccountType(e.target.value)}
+                  className="form-radio accent-black"
+                />
+                <span className="ml-2">Student</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  name="accountType"
+                  value="Member"
+                  checked={accountType === "Member"}
+                  onChange={(e) => setAccountType(e.target.value)}
+                  className="form-radio accent-black"
+                />
+                <span className="ml-2">Member</span>
+              </label>
+            </div>
+          </div>
 
           <button className="w-full py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium">
             {state}

@@ -11,7 +11,7 @@ export const getUserData = async (req, res) => {
         const db = await connectToDatabase();
         // Join User and Authentication tables to get the user name and verification status
         const [rows] = await db.query(
-            `SELECT U.name, A.isAccountVerified
+            `SELECT U.name, A.isAccountVerified, U.accountType
              FROM User U
              JOIN Authentication A ON U.userID = A.userID
              WHERE U.userID = ?`, 
@@ -28,6 +28,7 @@ export const getUserData = async (req, res) => {
             userData: {
                 name: user.name,
                 isAccountVerified: !!user.isAccountVerified,
+                accountType: user.accountType
             }
         });
     } catch (error) {

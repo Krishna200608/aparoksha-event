@@ -11,9 +11,9 @@ const generateOtp = () => {
 
 // Register a new user
 export const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, accountType } = req.body;
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !accountType) {
         return res.json({ success: false, message: "Missing Details" });
     }
 
@@ -35,18 +35,25 @@ export const register = async (req, res) => {
         const db = await connectToDatabase();
 
         // Check if user already exists in User table
-        const [existingUser] = await db.execute("SELECT * FROM User WHERE email = ?", [email]);
+        const [existingUser] = await db.execute("SELECT * FROM User WHERE email = ? AND accountType = ?", [email, accountType]);
         if (existingUser.length > 0) {
             return res.json({ success: false, message: "User already exists" });
         }
 
         // Insert new user into User table
         const [result] = await db.execute(
-            "INSERT INTO User (name, email) VALUES (?, ?)",
-            [name, email]
+            "INSERT INTO User (name, email, accountType) VALUES (?, ?, ?)",
+            [name, email, accountType]
         );
+
         const userID = result.insertId;
 
+        if (accountType === "Student") {
+            await db.execute("INSERT INTO Student (userID) VALUES (?)", [userID]);
+        } else {
+            await db.execute("INSERT INTO Member (userID) VALUES (?)", [userID]);
+        }
+        
         // Hash password and create entry in Authentication table
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -83,9 +90,9 @@ export const register = async (req, res) => {
 
 // Login a user
 export const login = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, accountType} = req.body;
 
-    if (!email || !password) {
+    if (!email || !password || !accountType) {
         return res.json({ success: false, message: "Email and Password are required" });
     }
 
@@ -95,7 +102,7 @@ export const login = async (req, res) => {
         const [rows] = await db.query(
             `SELECT u.userID, u.email, a.passwordHash 
              FROM User u JOIN Authentication a ON u.userID = a.userID 
-             WHERE u.email = ?`, [email]
+             WHERE u.email = ? AND u.accountType = ?`, [email,accountType]
         );
         if (rows.length === 0) {
             return res.json({ success: false, message: "Email not registered" });
@@ -351,7 +358,7 @@ export const resetPassword = async (req, res) => {
             [hashedPassword, '', 0, authData.userID]
         );
 
-        return res.json({ success: true, message: "Password has been reset successfully" });
+        return res.json({ success: true, message: "Password has been reset successfully, Please Login with your new password" });
     } catch (error) {
         console.error(error);
         return res.json({ success: false, message: error.message });

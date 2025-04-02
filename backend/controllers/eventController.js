@@ -31,39 +31,39 @@ export const createEvent = async (req, res) => {
     }
 };
 
-export const registerForEvent = async (req, res) => {
-    const { userID, eventID } = req.body;
+    export const registerForEvent = async (req, res) => {
+        const { userID, eventID } = req.body;
 
-    // Validate that both userID and eventID are provided
-    if (!userID || !eventID) {
-        return res.status(400).json({ success: false, message: "User ID and Event ID are required" });
-    }
-
-    try {
-        const db = await connectToDatabase();
-
-        // Check if the user is already registered for the event in the Registration table
-        const [existingRegistration] = await db.execute(
-            "SELECT * FROM Registration WHERE userID = ? AND eventID = ?",
-            [userID, eventID]
-        );
-
-        if (existingRegistration.length > 0) {
-            return res.json({ success: false, message: "User already registered for this event" });
+        // Validate that both userID and eventID are provided
+        if (!userID || !eventID) {
+            return res.status(400).json({ success: false, message: "User ID and Event ID are required" });
         }
 
-        // Insert the registration record into the Registration table
-        await db.execute(
-            "INSERT INTO Registration (userID, eventID) VALUES (?, ?)",
-            [userID, eventID]
-        );
+        try {
+            const db = await connectToDatabase();
 
-        return res.status(201).json({ success: true, message: "Event registration successful" });
-    } catch (error) {
-        console.error("Error registering for event:", error);
-        return res.status(500).json({ success: false, message: error.message });
-    }
-};
+            // Check if the user is already registered for the event in the Registration table
+            const [existingRegistration] = await db.execute(
+                "SELECT * FROM Registration WHERE userID = ? AND eventID = ?",
+                [userID, eventID]
+            );
+
+            if (existingRegistration.length > 0) {
+                return res.json({ success: false, message: "User already registered for this event" });
+            }
+
+            // Insert the registration record into the Registration table
+            await db.execute(
+                "INSERT INTO Registration (userID, eventID) VALUES (?, ?)",
+                [userID, eventID]
+            );
+
+            return res.status(201).json({ success: true, message: "Event registration successful" });
+        } catch (error) {
+            console.error("Error registering for event:", error);
+            return res.status(500).json({ success: false, message: error.message });
+        }
+    };
 
 export const getEvents = async (req, res) => {
     try {

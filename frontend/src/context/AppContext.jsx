@@ -15,7 +15,7 @@ export const AppContextProvider = (props) => {
 
     const getAuthState = async () => {
         try {
-            const { data } = await axios.get(backendUrl + "/api/auth/is-auth");
+            const { data } = await axios.get(backendUrl + "/api/auth/is-auth"); // This checks if the user has a record or not in the database
             if (data.success) {
                 setIsLoggedin(true);
                 getUserData();
@@ -30,6 +30,7 @@ export const AppContextProvider = (props) => {
         try {
             const { data } = await axios.get(backendUrl + "/api/user/data");
             data.success ? setUserData(data.userData) : toast.error(data.message);
+            //console.log(data.userData);
         } catch (error) {
             console.log(error);
             toast.error(error.message);

@@ -7,10 +7,11 @@ import { AppContext } from "../context/AppContext";
 const CreateEventForm = () => {
   axios.defaults.withCredentials = true;
 
-  const { navigate, backendUrl} = useContext(AppContext);
+  const { navigate, backendUrl } = useContext(AppContext);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [eventDate, setEventDate] = useState("");
+  const [location, setLocation] = useState("");
   const [registrationFee, setRegistrationFee] = useState("");
   const [prizes, setPrizes] = useState("");
 
@@ -18,7 +19,7 @@ const CreateEventForm = () => {
     e.preventDefault();
 
     if (!title || !eventDate) {
-      toast.error("Title and event date are required");
+      toast.error("Event title and date are required");
       return;
     }
 
@@ -27,11 +28,13 @@ const CreateEventForm = () => {
         title,
         description,
         event_date: eventDate,
+        location: location || null,
         registration_fee: registrationFee || 0,
         prizes,
       };
+
       const response = await axios.post(
-        backendUrl + "/api/events/create-event",
+        `${backendUrl}/api/events/create-event`,
         data
       );
 
@@ -41,9 +44,10 @@ const CreateEventForm = () => {
         setTitle("");
         setDescription("");
         setEventDate("");
+        setLocation("");
         setRegistrationFee("");
         setPrizes("");
-        navigate('/')
+        navigate("/");
       } else {
         toast.error(response.data.message);
       }
@@ -96,6 +100,16 @@ const CreateEventForm = () => {
               onChange={(e) => setEventDate(e.target.value)}
               className="bg-transparent outline-none w-full"
               required
+            />
+          </div>
+          {/* New Input for Location */}
+          <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5C]">
+            <input
+              type="text"
+              placeholder="Location (optional)"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="bg-transparent outline-none w-full"
             />
           </div>
           <div className="mb-4 flex items-center gap-3 px-5 py-2.5 rounded-full bg-[#333A5C]">

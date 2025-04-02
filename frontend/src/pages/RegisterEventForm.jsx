@@ -47,9 +47,10 @@ const RegisterEventForm = () => {
 
     try {
       // Only send event_id since middleware automatically attaches user_id in headers
+      // console.log(selectedEvent);
       const response = await axios.post(
         `${backendUrl}/api/events/register-for-event`,
-        { event_id: selectedEvent }
+        { eventID: selectedEvent }
       );
 
       if (response.data.success) {
@@ -88,9 +89,9 @@ const RegisterEventForm = () => {
               required
             >
               <option value="">Select an event</option>
-              {events.map((event) => (
-                <option key={event.event_id} value={event.event_id}>
-                  {event.title} - {new Date(event.event_date).toLocaleString()}
+              {events.map((event, index) => (
+                <option key={index} value={event.eventID}>
+                  {event.title} - {new Date(event.date).toLocaleString()}
                 </option>
               ))}
             </select>

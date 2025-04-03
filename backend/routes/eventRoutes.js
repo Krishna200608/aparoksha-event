@@ -8,7 +8,7 @@ const eventRouter = express.Router();
 eventRouter.post('/create-event', userAuth, createEvent);
 eventRouter.post('/register-for-event', userAuth, registerForEvent);
 
-eventRouter.get('/event', userAuth, getEvents);
+eventRouter.get('/list', userAuth, getEvents);
 
 
 

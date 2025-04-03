@@ -11,6 +11,7 @@ export const AppContextProvider = (props) => {
     const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const [isLoggedin, setIsLoggedin] = useState(false);
     const [userData, setUserData] = useState(null);
+    const [events, setEvents] = useState([]);
     const navigate = useNavigate();
 
     const getAuthState = async () => {
@@ -19,6 +20,7 @@ export const AppContextProvider = (props) => {
             if (data.success) {
                 setIsLoggedin(true);
                 getUserData();
+                getEventsData();
             }
         } catch (error) {
             console.log(error);
@@ -37,6 +39,19 @@ export const AppContextProvider = (props) => {
         }
     };
 
+    const getEventsData = async () => {
+        try {
+            const {data} = await axios.get(backendUrl + '/api/events/list');
+            data.success ? setEvents(data.events) : toast.error(data.message);
+            //console.log(data.events);
+            //console.log(events);
+
+        } catch (error) {
+            console.log(error);
+            toast.error(error.message);
+        }
+    }
+
     useEffect(()=>{
         getAuthState();
     },[])
@@ -49,6 +64,7 @@ export const AppContextProvider = (props) => {
         setUserData,
         getUserData,
         navigate,
+        events
     };
 
     return (

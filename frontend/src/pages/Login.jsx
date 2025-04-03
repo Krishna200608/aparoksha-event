@@ -235,9 +235,9 @@ const Login = () => {
                   value="Student"
                   checked={accountType === "Student"}
                   onChange={(e) => setAccountType(e.target.value)}
-                  className="form-radio accent-black"
+                  className="form-radio accent-gray-500"
                 />
-                <span className="ml-2">Student</span>
+                <span className={`ml-2 ${accountType === "Student" && 'text-white'}`}>Student</span>
               </label>
               <label className="inline-flex items-center">
                 <input
@@ -246,9 +246,9 @@ const Login = () => {
                   value="Member"
                   checked={accountType === "Member"}
                   onChange={(e) => setAccountType(e.target.value)}
-                  className="form-radio accent-black"
+                  className="form-radio accent-gray-500"
                 />
-                <span className="ml-2">Member</span>
+                <span className={`ml-2 ${accountType === "Member" && 'text-white'}`}>Member</span>
               </label>
             </div>
           </div>

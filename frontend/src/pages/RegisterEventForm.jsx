@@ -7,28 +7,8 @@ import { AppContext } from "../context/AppContext";
 const RegisterEventForm = () => {
   axios.defaults.withCredentials = true;
 
-  const { navigate, backendUrl, userData, getUserData } = useContext(AppContext);
+  const { navigate, backendUrl, userData, getUserData, events } = useContext(AppContext);
   const [selectedEvent, setSelectedEvent] = useState("");
-  const [events, setEvents] = useState([]);
-
-  // Fetch events from the backend when the component mounts
-  useEffect(() => {
-    axios
-      .get(`${backendUrl}/api/events/event`)
-      .then((response) => {
-        if (response.data.success) {
-          setEvents(response.data.events);
-        } else {
-          toast.error("Failed to load events");
-        }
-      })
-      .catch((error) => {
-        console.error("Error loading events:", error);
-        toast.error("Error loading events");
-      });
-
-      getUserData();
-  }, [backendUrl]);
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();

@@ -8,6 +8,8 @@ import header_img from './header_img.png'
 import left_arrow from './left-arrow.svg'
 import eye_open from './eye-open.svg'
 import eye_close from './eye-close.svg'
+import dropdown_icon from './dropdown_icon.png'
+import upload_area from './image_upload.png'
 
 
 export const assets = {
@@ -20,5 +22,7 @@ export const assets = {
     mail_icon,
     person_icon,
     hand_wave,
-    header_img
+    header_img,
+    dropdown_icon,
+    upload_area
 }

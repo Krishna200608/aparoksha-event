@@ -35,7 +35,7 @@ const Header = () => {
           </button>
         )}
 
-        {userData && userData.accountType === "Member" && (
+        {userData && userData.accountType === "Student" && (
           <button
             onClick={() => navigate("/create-event")}
             className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all"
@@ -44,14 +44,6 @@ const Header = () => {
           </button>
         )}
 
-        {userData && userData.accountType === "Student" && (
-          <button
-            onClick={() => navigate("/register-event")}
-            className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all"
-          >
-            Register Event
-          </button>
-        )}
       </div>
     </div>
   );

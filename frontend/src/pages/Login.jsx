@@ -77,7 +77,7 @@ const Login = () => {
       }
     }
 
-    if(pwdScore === 0 || pwdScore === 1){
+    if (state === "Sign Up" && (pwdScore === 0 || pwdScore === 1)){
       toast.error("Your password is too weak. Please choose a stronger password");
       return;
     }

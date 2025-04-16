@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext } from "react";
 import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 
@@ -6,44 +6,38 @@ const Header = () => {
   const { userData, navigate } = useContext(AppContext);
 
   return (
-    <div className="flex flex-col items-center mt-20 px-4 text-center text-gray-800">
-      <img src={assets.header_img} className="w-36 h-36 rounded-full mb-6" />
-      <h1 className="flex items-center gap-2 text-xl sm:text-3xl font-medium mb-2">
-        Hey{userData ? ' ' + userData.name : ", Welcome Here!"} <br />{" "}
-        {userData &&
-          (userData.accountType === "Student"
-            ? "joined as a Student"
-            : "joined as a Member")}
-        <img src={assets.hand_wave} className="w-10 aspect-square" />
-      </h1>
-
-      <h2 className="text-3xl sm:text-5xl font-semibold mb-4">
-        Welcome to Aparoskha
-      </h2>
-      <p className="mb-8 max-w-md">
-        Welcome to Aparoksha by IIITA! Take a quick tour to explore, register,
-        and connect.
-      </p>
-
-      <div className="flex justify-between gap-5">
-        {!userData && (
+    <div className="hero min-h-screen w-full mt-30 flex justify-center text-center bg-[url('/Home.jpg')] bg-cover">
+      <div className="hero-overlay"></div>
+      <div className="hero-content text-neutral-content text-center flex justify-center items-center">
+        <div className="text-white w-full mx-auto items-center flex flex-col justify-center">
+          {userData ? (
+            <>
+              <h1 className="mb-5 text-7xl font-bold">Hey {userData.name}</h1>
+              <p className="mb-5 max-w-md text-xl">
+                {userData.accountType === "Student"
+                  ? "joined as a Student"
+                  : "joined as a Member"}
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="mb-5 text-7xl font-bold">Welcome to Aparoksha</h1>
+              <p className="mb-5 max-w-md text-lg">
+                Join our premier college technical event featuring innovative
+                workshops and inspiring talks.
+              </p>
+            </>
+          )}
           <button
-            onClick={() => navigate("/login")}
-            className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all"
+            onClick={() => !userData ? navigate("/login") : navigate("/events")}
+            className="max-w-1/2 bg-gradient-to-r from-[#5dade2] via-[#3498db] to-[#21618c]
+             hover:from-[#3498db] hover:via-[#21618c] hover:to-[#1b4f72]
+             text-white py-2 px-4 rounded-md cursor-pointer
+             transition-colors duration-200"
           >
-            Get Started
+            {userData ? 'Browse Events' : 'Get Started'}
           </button>
-        )}
-
-        {userData && userData.accountType === "Student" && (
-          <button
-            onClick={() => navigate("/create-event")}
-            className="border border-gray-500 rounded-full px-8 py-2.5 hover:bg-gray-100 transition-all"
-          >
-            Create Event
-          </button>
-        )}
-
+        </div>
       </div>
     </div>
   );

@@ -1,13 +1,13 @@
 import { connectToDatabase } from "../lib/db.js";
 
 export const registerForEvent = async (req, res) => {
-  const { userID, eventID, fee } = req.body;
+  const { userID, eventID, fee, roll, contact } = req.body;
 
   // Validate that both userID and eventID are provided.
-  if (!userID || !eventID) {
+  if (!userID || !eventID || !roll) {
     return res
       .status(400)
-      .json({ success: false, message: "User ID and Event ID are required" });
+      .json({ success: false, message: "User ID, Event ID and Roll Number are required" });
   }
 
   try {
@@ -29,9 +29,9 @@ export const registerForEvent = async (req, res) => {
 
     // Insert the registration record.
     await db.execute(
-      "INSERT INTO Registration (userID, eventID, status) VALUES (?, ?, ?)",
-      [userID, eventID, status]
-    );
+      "INSERT INTO Registration (userID, eventID, status, roll_no, contact, notification) VALUES (?, ?, ?, ?, ?, ?)",
+      [userID, eventID, status, roll, contact, 'not sent']
+    );    
 
     await db.execute(
       "UPDATE eventInfo SET registered_students = registered_students + 1 WHERE eventID = ?",
@@ -107,3 +107,4 @@ export const getRegistrationDetails = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
+

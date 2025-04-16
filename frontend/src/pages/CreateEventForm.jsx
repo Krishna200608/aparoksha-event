@@ -451,7 +451,7 @@ const CreateEventForm = () => {
           <div className="flex items-center justify-center mt-5">
             <button
               type="submit"
-              className="w-full max-w-[350px] py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium"
+              className="cursor-pointer w-full max-w-[350px] py-2.5 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-900 text-white font-medium"
             >
               Create Event
             </button>

@@ -8,6 +8,8 @@ import eventRouter from './routes/eventRoutes.js';
 import connectCloudinary from './config/cloudinary.js';
 import registrationRouter from './routes/registrationRoutes.js';
 
+
+
 const app = express();
 const port = process.env.PORT || 4000;
 connectCloudinary();

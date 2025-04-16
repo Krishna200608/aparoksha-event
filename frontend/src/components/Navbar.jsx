@@ -44,11 +44,11 @@ const Navbar = () => {
   };
 
   return (
-    <div className="w-full mx-auto flex justify-between items-center p-4 sm:p-6 absolute top-0 shadow-md">
+    <div className="w-full mx-auto flex justify-between items-center p-4 sm:p-6 absolute top-0 z-50 shadow-md">
       <Link to="/">
         <img src={assets.logo} alt="Logo" className="w-20 h-17 sm:w-20" />
       </Link>
-      <div className="flex items-center justify-center  gap-8">
+      <div className="flex items-center justify-center gap-8">
         <nav className="hidden md:flex space-x-6">
           <NavLink
             to="/"
@@ -95,7 +95,6 @@ const Navbar = () => {
           )}
         </nav>
       </div>
-
       <div>
         {userData ? (
           <div className="w-8 h-8 flex justify-center items-center rounded-full bg-black text-white relative group cursor-pointer">

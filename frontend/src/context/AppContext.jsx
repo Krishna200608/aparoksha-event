@@ -28,13 +28,13 @@ export const AppContextProvider = (props) => {
             if (data.success) {
                 setIsLoggedin(true);
                 getUserData();
+                getRegistrationDetails();
+            }
                 getEventsData();
                 getCategories();
                 getVenues();
                 getOrganizers();
                 getSponsors();
-                getRegistrationDetails();
-            }
         } catch (error) {
             console.log(error);
             toast.error(error.message);
@@ -44,7 +44,7 @@ export const AppContextProvider = (props) => {
     const getUserData = async () => {
         try {
             const { data } = await axios.get(backendUrl + "/api/user/data");
-            data.success ? setUserData(data.userData) : toast.error(data.message);
+            data.success ? setUserData(data.userData) : console.log(data.message);
             //console.log(data.userData);
         } catch (error) {
             console.log(error);

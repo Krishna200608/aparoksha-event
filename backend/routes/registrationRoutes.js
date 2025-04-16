@@ -5,10 +5,10 @@ import { getRegistrationDetails, registerForEvent, unregisterEvent } from '../co
 const registrationRouter = express.Router();
 
 // Post
-registrationRouter.post('/register-for-event', userAuth, registerForEvent);
+registrationRouter.post('/register-for-event',userAuth, registerForEvent);
 registrationRouter.post('/unregister-for-event', userAuth, unregisterEvent);
 
 //Get
-registrationRouter.get('/registration-details', userAuth, getRegistrationDetails); // Registration
+registrationRouter.get('/registration-details', getRegistrationDetails); // Registration
 
 export default registrationRouter;

@@ -106,7 +106,7 @@ export const EMAIL_VERIFY_TEMPLATE = `
 </body>
 </html>
 
-`
+`;
 
 export const PASSWORD_RESET_TEMPLATE = `
 
@@ -216,7 +216,7 @@ export const PASSWORD_RESET_TEMPLATE = `
   </table>
 </body>
 </html>
-`
+`;
 export const EVENT_NOTIFICATION_TEMPLATE = `
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -320,3 +320,52 @@ export const EVENT_NOTIFICATION_TEMPLATE = `
 </html>
 `;
 
+export const REGISTRATION_COMPLETE = `
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Registration Confirmation</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet" type="text/css">
+  <style type="text/css">
+    body { margin: 0; padding: 0; font-family: 'Open Sans', sans-serif; background: #E5E5E5; }
+    table, td { border-collapse: collapse; }
+    .container { width: 100%; max-width: 600px; margin: 70px auto; background-color: #ffffff; }
+    .header { background: #22D172; padding: 20px; text-align: center; color: #fff; font-size: 24px; font-weight: bold; }
+    .content { padding: 30px; color: #333333; line-height: 1.6; }
+    .content h2 { color: #22D172; margin-bottom: 10px; }
+    .content ul { list-style-type: none; padding: 0; }
+    .content li { margin-bottom: 8px; }
+    .button { display: inline-block; background: #22D172; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+    .greetings{ font-weight: bold; }
+    @media only screen and (max-width: 480px) { .container { width: 90% !important; } }
+  </style>
+</head>
+<body>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" align="center" bgcolor="#F6FAFB">
+    <tr><td align="center">
+      <table class="container" cellpadding="0" cellspacing="0" border="0">
+        <tr><td class="header">Registration Successful!</td></tr>
+        <tr><td class="content">
+          <h2>Hello,</h2>
+          <p>You have successfully registered for the event "<strong>{{event_title}}</strong>".</p>
+          <p><strong>Event Details:</strong></p>
+         <ul>
+            <li><strong>Start:</strong> {{start_date}} at {{start_time}}</li>
+            <li><strong>End:</strong>   {{end_date}} at {{end_time}}</li>
+          </ul>
+          <p><strong>Venue Information:</strong></p>
+          <ul>
+            <li><strong>Name:</strong> {{venue_name}}</li>
+            <li><strong>Address:</strong> {{venue_address}}</li>
+          </ul>
+          <p>We look forward to having you with us.</p>
+          <p class="greetings">Thank you,<br/>Aparoksha Event Management Team</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
+`;

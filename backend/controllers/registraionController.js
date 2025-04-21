@@ -2,6 +2,11 @@ import { connectToDatabase } from "../lib/db.js";
 import Stripe from "stripe";
 import razorpay from "razorpay";
 import crypto from "crypto";
+import transporter from "../config/nodemailer.js";
+import {
+  EVENT_NOTIFICATION_TEMPLATE,
+  REGISTRATION_COMPLETE,
+} from "../config/emailTemplates.js";
 
 //gateway initialisation
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -50,21 +55,62 @@ export const registerForEvent = async (req, res) => {
     );
     const registrationID = insertResult.insertId;
 
-    // 4. Get the event title for descriptions
-    const [[{ title: eventTitle }]] = await db.execute(
-      `SELECT title FROM Event WHERE eventID = ?`,
+    // 4) Fetch start/end dates **and times** from the DB
+    const [[eventInfo]] = await db.execute(
+      `
+    SELECT
+      e.title                                 AS eventTitle,
+      v.name                                  AS venueName,
+      v.address                               AS venueAddress,
+      DATE_FORMAT(i.start_date, '%Y-%m-%d')   AS startDate,
+      DATE_FORMAT(i.start_date, '%H:%i')      AS startTime,
+      DATE_FORMAT(i.end_date,   '%Y-%m-%d')   AS endDate,
+      DATE_FORMAT(i.end_date,   '%H:%i')      AS endTime
+    FROM eventInfo  AS i
+    INNER JOIN \`Event\`   AS e  ON i.eventID  = e.eventID
+    INNER JOIN Venue       AS v  ON e.venueID  = v.venueID
+    WHERE i.eventID = ?
+  `,
       [eventID]
     );
 
-    // 5. If it's free, bump counter & return
+    const [[userInfo]] = await db.execute(
+      `SELECT email FROM User WHERE userID = ?`,
+      [userID]
+    );
+
+    // 5. If it's free, bump counter, send email & return
     if (parseFloat(fee) === 0) {
       await db.execute(
         "UPDATE eventInfo SET registered_students = registered_students + 1 WHERE eventID = ?",
         [eventID]
       );
+
+      // Prepare and send confirmation email
+      const mailOptions = {
+        from: process.env.SENDER_EMAIL,
+        to: userInfo.email,
+        subject: `Registration Successful: ${eventInfo.eventTitle}`,
+        html: REGISTRATION_COMPLETE.replace(
+          "{{event_title}}",
+          eventInfo.eventTitle
+        )
+          .replace("{{start_date}}", eventInfo.startDate)
+          .replace("{{start_time}}", eventInfo.startTime)
+          .replace("{{end_date}}", eventInfo.endDate)
+          .replace("{{end_time}}", eventInfo.endTime)
+          .replace("{{venue_name}}", eventInfo.venueName)
+          .replace("{{venue_address}}", eventInfo.venueAddress),
+      };
+      await transporter.sendMail(mailOptions);
+
+      console.log(
+        `Registration successful for "${eventInfo.eventTitle}" (Free Event). Confirmation email sent to ${userInfo.email}`
+      );
+
       return res.status(201).json({
         success: true,
-        message: `Registration successful for "${eventTitle}" (Free Event).`,
+        message: `Registration successful for "${eventInfo.eventTitle}" (Free Event). Confirmation email sent to ${userInfo.email}`,
       });
     }
 
@@ -75,7 +121,7 @@ export const registerForEvent = async (req, res) => {
         {
           price_data: {
             currency: CURRENCY.toLowerCase(),
-            product_data: { name: `Registration: ${eventTitle}` },
+            product_data: { name: `Registration: ${eventInfo.eventTitle}` },
             unit_amount: Math.round(parseFloat(fee) * 100),
           },
           quantity: 1,
@@ -107,20 +153,17 @@ export const registerForEvent = async (req, res) => {
       };
 
       try {
-        // razorpay.orders.create() returns a Promise if you omit the callback
         const order = await razorpayInstance.orders.create(options);
 
         return res.status(201).json({
           success: true,
           order,
           registrationID,
-          message: `Order created for "${eventTitle}"`,
+          message: `Order created for "${eventInfo.eventTitle}"`,
         });
       } catch (err) {
         console.error("Razorpay error:", err);
-        // use the HTTP status code Razorpay might provide, or default 500
         const statusCode = err.statusCode || 500;
-        // use the more descriptive field if available
         const msg = err.description || err.error || err.message;
         return res.status(statusCode).json({
           success: false,
@@ -140,47 +183,102 @@ export const registerForEvent = async (req, res) => {
 };
 
 export const verifyStripe = async (req, res) => {
-  // You can also use req.body if you're POSTing JSON
-  const { registrationID, success } = req.body;
-
-  if (!registrationID || typeof success === "undefined") {
+  // 1) Destructure and validate all four inputs:
+  const { registrationID, eventID, userID, success } = req.body;
+  if (
+    !registrationID ||
+    !eventID ||
+    !userID ||
+    typeof success === "undefined"
+  ) {
     return res.status(400).json({
       success: false,
-      message: "registrationID and success flag are required",
+      message:
+        "registrationID, eventID, userID and success flag are all required",
     });
   }
 
   try {
     const db = await connectToDatabase();
 
-    if (success === "true") {
-      // Mark the registration as paid
+    // Treat either boolean true or string "true" as success
+    if (success === true || success === "true") {
+      // 2) Mark the registration as paid
       await db.execute(
-        `UPDATE Registration
-           SET status = ?, payment_method = ?
-         WHERE registrationID = ?`,
+        `
+          UPDATE Registration
+             SET status = ?,
+                 payment_method = ?
+           WHERE registrationID = ?
+        `,
         ["paid", "Stripe", registrationID]
       );
 
-      // incrementing the registered Students
+      // 3) Pull event + venue details (uses i.venueID)
+      const [[eventInfo]] = await db.execute(
+        `
+          SELECT
+            e.title                           AS eventTitle,
+            v.name                            AS venueName,
+            v.address                         AS venueAddress,
+            DATE_FORMAT(i.start_date, '%Y-%m-%d') AS startDate,
+            DATE_FORMAT(i.start_date, '%H:%i')   AS startTime,
+            DATE_FORMAT(i.end_date,   '%Y-%m-%d') AS endDate,
+            DATE_FORMAT(i.end_date,   '%H:%i')   AS endTime
+          FROM eventInfo AS i
+          INNER JOIN \`Event\` AS e  ON i.eventID  = e.eventID
+          INNER JOIN Venue     AS v  ON e.venueID  = v.venueID
+          WHERE i.eventID = ?
+        `,
+        [eventID]
+      );
+
+      // 4) Fetch the user’s email
+      const [[userInfo]] = await db.execute(
+        `SELECT email FROM User WHERE userID = ?`,
+        [userID]
+      );
+
+      // 5) Increment registered_students
       await db.execute(
-        `UPDATE eventInfo ei
-           INNER JOIN Registration r
-             ON r.eventID = ei.eventID
-           SET ei.registered_students = ei.registered_students + 1
-         WHERE r.registrationID = ?`,
+        `
+          UPDATE eventInfo AS ei
+          INNER JOIN Registration AS r
+            ON r.eventID = ei.eventID
+          SET ei.registered_students = ei.registered_students + 1
+          WHERE r.registrationID = ?
+        `,
         [registrationID]
       );
 
-      return res.json({
+      // 6) Build and send the confirmation email
+      const htmlBody = REGISTRATION_COMPLETE
+        .replace("{{event_title}}", eventInfo.eventTitle)
+        .replace("{{start_date}}", eventInfo.startDate)
+        .replace("{{start_time}}", eventInfo.startTime)
+        .replace("{{end_date}}", eventInfo.endDate)
+        .replace("{{end_time}}", eventInfo.endTime)
+        .replace("{{venue_name}}", eventInfo.venueName)
+        .replace("{{venue_address}}", eventInfo.venueAddress);
+
+      await transporter.sendMail({
+        from: process.env.SENDER_EMAIL,
+        to: userInfo.email,
+        subject: `Registration Successful: ${eventInfo.eventTitle}`,
+        html: htmlBody,
+      });
+
+      return res.status(200).json({
         success: true,
-        message: "Payment verified and registration updated.",
+        message: `Payment verified, registration updated, and confirmation email sent to ${userInfo.email}.`,
       });
     } else {
-      // Payment failed/cancelled → remove the registration record
+      // Payment failed → remove the registration record
       await db.execute(
-        `DELETE FROM Registration
-         WHERE registrationID = ?`,
+        `
+          DELETE FROM Registration
+           WHERE registrationID = ?
+        `,
         [registrationID]
       );
 
@@ -202,11 +300,26 @@ export const verifyRazorpay = async (req, res) => {
     razorpay_order_id,
     razorpay_payment_id,
     razorpay_signature,
+    userID,
   } = req.body;
 
-  console.log(registrationID);
+  // 1) Validate required params
+  if (
+    !registrationID ||
+    !eventID ||
+    !userID ||
+    !razorpay_order_id ||
+    !razorpay_payment_id ||
+    !razorpay_signature
+  ) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "registrationID, eventID, userID, razorpay_order_id, razorpay_payment_id and razorpay_signature are all required",
+    });
+  }
 
-  // 1. Verify the signature
+  // 2) Verify signature
   const expected = crypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
     .update(`${razorpay_order_id}|${razorpay_payment_id}`)
@@ -221,40 +334,89 @@ export const verifyRazorpay = async (req, res) => {
 
   try {
     const db = await connectToDatabase();
-    // 2. (Optional) double‐check status on Razorpay’s side
-    const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
 
+    // 3) Double‑check on Razorpay’s end
+    const orderInfo = await razorpayInstance.orders.fetch(
+      razorpay_order_id
+    );
     if (orderInfo.status !== "paid") {
+      // remove registration if not paid
       await db.execute(
-        `DELETE FROM Registration
-         WHERE registrationID = ?`,
+        `DELETE FROM Registration WHERE registrationID = ?`,
         [registrationID]
       );
-
       return res.status(400).json({
         success: false,
         message: "Payment not completed",
       });
     }
 
-    // 3. Update your DB
-
+    // 4) Mark registration paid
     await db.execute(
-      `UPDATE Registration
-         SET status = ?, payment_method = ?
-       WHERE registrationID = ?`,
+      `
+        UPDATE Registration
+          SET status = ?, payment_method = ?
+        WHERE registrationID = ?
+      `,
       ["paid", "razorpay", registrationID]
     );
 
-    // 4. Increment attendee count
+    // 5) Increment attendee count
     await db.execute(
-      "UPDATE eventInfo SET registered_students = registered_students + 1 WHERE eventID = ?",
+      `
+        UPDATE eventInfo
+           SET registered_students = registered_students + 1
+         WHERE eventID = ?
+      `,
       [eventID]
     );
 
-    return res.status(200).json({
+    // 6) Fetch event + venue details
+    const [[eventInfo]] = await db.execute(
+      `
+        SELECT
+          e.title                             AS eventTitle,
+          v.name                              AS venueName,
+          v.address                           AS venueAddress,
+          DATE_FORMAT(i.start_date, '%Y-%m-%d') AS startDate,
+          DATE_FORMAT(i.start_date, '%H:%i')   AS startTime,
+          DATE_FORMAT(i.end_date,   '%Y-%m-%d') AS endDate,
+          DATE_FORMAT(i.end_date,   '%H:%i')   AS endTime
+        FROM eventInfo AS i
+        INNER JOIN \`Event\`   AS e  ON i.eventID  = e.eventID
+        INNER JOIN Venue       AS v  ON e.venueID  = v.venueID
+        WHERE i.eventID = ?
+      `,
+      [eventID]
+    );
+
+    // 7) Fetch user email
+    const [[userInfo]] = await db.execute(
+      `SELECT email FROM User WHERE userID = ?`,
+      [userID]
+    );
+
+    // 8) Build and send confirmation email
+    const htmlBody = REGISTRATION_COMPLETE
+      .replace("{{event_title}}", eventInfo.eventTitle)
+      .replace("{{start_date}}", eventInfo.startDate)
+      .replace("{{start_time}}", eventInfo.startTime)
+      .replace("{{end_date}}", eventInfo.endDate)
+      .replace("{{end_time}}", eventInfo.endTime)
+      .replace("{{venue_name}}", eventInfo.venueName)
+      .replace("{{venue_address}}", eventInfo.venueAddress);
+
+    await transporter.sendMail({
+      from: process.env.SENDER_EMAIL,
+      to: userInfo.email,
+      subject: `Registration Successful: ${eventInfo.eventTitle}`,
+      html: htmlBody,
+    });
+
+    // 9) Respond
+    return res.status(201).json({
       success: true,
-      message: "Payment successful and registration confirmed",
+      message: `Registration successful for "${eventInfo.eventTitle}". Confirmation email sent to ${userInfo.email}`,
     });
   } catch (error) {
     console.error("Error in verifyRazorpay:", error);
@@ -264,6 +426,7 @@ export const verifyRazorpay = async (req, res) => {
     });
   }
 };
+
 
 export const unregisterEvent = async (req, res) => {
   const { userID, eventID, fee } = req.body;

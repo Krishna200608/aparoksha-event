@@ -31,7 +31,7 @@ const EventPage = () => {
   const [contact, setContact] = useState("");
   const [method, setMethod] = useState("");
 
-  const initPay = (order,registrationID) => {
+  const initPay = (order, registrationID) => {
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: order.amount,
@@ -44,11 +44,10 @@ const EventPage = () => {
       handler: async (response) => {
         //  / console.log(response);
         try {
-
           const payload = {
             ...response,
-            eventID : eventId,
-            registrationID
+            eventID: eventId,
+            registrationID,
           };
 
           const { data } = await axios.post(
@@ -56,9 +55,11 @@ const EventPage = () => {
             payload
           );
           if (data.success) {
-            toast.success("Registration successful for the event, Please refresh!");
+            toast.success(data.message);
+            toast.success("Please refresh!");
+
             navigate("/events/" + eventId);
-          } 
+          }
         } catch (error) {
           console.log(error);
           toast.error(error);
@@ -72,7 +73,7 @@ const EventPage = () => {
       },
     };
     const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", failure => {
+    rzp.on("payment.failed", (failure) => {
       toast.error("Payment failed: " + failure.error.description);
     });
     rzp.open();
@@ -119,7 +120,8 @@ const EventPage = () => {
         }
       );
       // console.log("raw response:", response.data);
-      const { success, session_url, message, order, registrationID } = response.data;
+      const { success, session_url, message, order, registrationID } =
+        response.data;
       if (!success) {
         toast.error(message);
         return;

@@ -24,6 +24,8 @@ import contact_image from "./contact_image.jpg";
 import About1 from "./About1.jpg";
 import About2 from "./About2.png";
 import Home from "./Home.jpg";
+import stripe_logo from "./stripe_logo.png";
+import razorpay_logo from './razorpay_logo.png'
 
 
 export const assets = {
@@ -52,5 +54,7 @@ export const assets = {
     contact_image,
     About1,
     About2,
-    Home
+    Home,
+    stripe_logo,
+    razorpay_logo
 }

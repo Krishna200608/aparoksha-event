@@ -33,3 +33,5 @@ app.use('/api/register',registrationRouter);
 
 app.listen(port, ()=> console.log("Server started on PORT: "+ port));
 
+// Stripe dummy card number : 4000003560000008
+// Razorpay dummyCard : 5267 3181 8797 5449

@@ -56,7 +56,7 @@ export const AppContextProvider = (props) => {
         try {
             const {data} = await axios.get(backendUrl + '/api/events/list');
             data.success ? setEventsData(data.events) : toast.error(data.message);
-            //console.log(data.events);
+            //  console.log(data.events);
             //console.log(events);
 
         } catch (error) {

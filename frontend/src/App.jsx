@@ -11,6 +11,7 @@ import About from './pages/About'
 import Contact from './pages/Contact'
 import EventPage from './pages/EventPage'
 import Member from './pages/Member'
+import Verify from './pages/Verify'
 
 const App = () => {
   return (
@@ -27,6 +28,7 @@ const App = () => {
         <Route path='/reset-password' element={<ResetPassword/>}/>
         <Route path='/create-event' element={<CreateEventForm/>}/>
         <Route path='/member' element={<Member/>}/>
+        <Route path='/verify' element={<Verify/>}/>
       </Routes>
     </div>
   )

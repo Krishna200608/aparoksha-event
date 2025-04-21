@@ -65,7 +65,9 @@ Welcome to the Aparoksha Event Management System—a 🎯 platform designed for 
 Create a `.env` file in the `frontend` folder and add:
 
 ```env
-VITE_BACKEND_URL='http://localhost:4000'
+VITE_BACKEND_URL = 'http://localhost:4000'
+VITE_RAZORPAY_KEY_ID = "your_razorpay_secret_key"
+
 ```
 
 ### 🔙 Backend `.env` Variables 📄
@@ -73,27 +75,43 @@ VITE_BACKEND_URL='http://localhost:4000'
 Create a `.env` file in the `backend` folder and add:
 
 ```env
-# 🍃 MongoDB connection
-MONBODB_URI='mongodb://localhost:27017'
+# 🍃 MongoDB Connection
+MONBODB_URI="your_mongodb_uri_here"
 
 # 🔑 JWT Secret
-JWT_SECRET='your_jwt_secret_here'
+JWT_SECRET="your_jwt_secret_here"
 
-NODE_ENV='development'
+# 🌐 Environment
+NODE_ENV="development"
 
 # ✉️ SMTP Configuration
 SMTP_USER="your_smtp_user_here"
-SMTP_PASS='your_smtp_password_here'
+SMTP_PASS="your_smtp_password_here"
 SENDER_EMAIL="your_sender_email_here"
 
-# 🐬 Database credentials
-DB_HOST=localhost
-DB_USER='your_db_user_here'
-DB_PASSWORD='your_db_password_here'
-DB_NAME='aparoksha'
+# 🐬 Database Credentials
+DB_HOST="your_db_host_here"
+DB_USER="your_db_user_here"
+DB_PASSWORD="your_db_password_here"
+DB_NAME="your_db_name_here"
 
 # 🚪 Server Port
-PORT=4000
+PORT="your_server_port_here"
+
+# ☁️ Cloudinary Configuration
+CLOUDINARY_API_KEY="your_cloudinary_api_key_here"
+CLOUDINARY_SECRET_KEY="your_cloudinary_secret_key_here"
+CLOUDINARY_NAME="your_cloudinary_name_here"
+
+# 💳 Payment Gateway Keys
+STRIPE_SECRET_KEY="your_stripe_secret_key_here"
+RAZORPAY_KEY_ID="your_razorpay_key_id_here"
+RAZORPAY_KEY_SECRET="your_razorpay_key_secret_here"
+
+# 🌍 Client Configuration
+CLIENT_URL="your_client_url_here"
+CURRENCY="your_currency_here"
+
 ```
 
 *Replace all placeholder values (e.g., `your_jwt_secret_here`, `your_smtp_user_here`, etc.) with actual credentials.*

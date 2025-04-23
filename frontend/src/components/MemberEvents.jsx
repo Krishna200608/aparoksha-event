@@ -143,8 +143,9 @@ const MemberEvents = () => {
                       <span className="font-semibold">Venue:</span> {venue.name}
                     </p>
                     <p className="mb-1">
-                      <span className="font-semibold">Registration Fee:</span> $
-                      {eventInfo.registration_fee}
+                    {(eventInfo.registration_fee) === "0.00"
+                    ? "Free"
+                    : `Rs. ${eventInfo.registration_fee}`}
                     </p>
                   </div>
                   {/* Main Image Section */}
@@ -189,8 +190,10 @@ const MemberEvents = () => {
                   {selectedEvent.event.venue.name}
                 </p>
                 <p className="mb-1">
-                  <span className="font-semibold">Registration Fee:</span> $
-                  {selectedEvent.event.eventInfo.registration_fee}
+                  <span className="font-semibold">Registration Fee:</span>{" "}
+                  {(selectedEvent.event.eventInfo.registration_fee) === "0.00"
+                    ? "Free"
+                    : `Rs. ${selectedEvent.event.eventInfo.registration_fee}`}
                 </p>
                 <p className="mb-1">
                   <span className="font-semibold">Description:</span>{" "}
@@ -308,7 +311,7 @@ const MemberEvents = () => {
           </div>
         </div>
       )}
-      <Footer/>
+      <Footer />
     </div>
   );
 };
